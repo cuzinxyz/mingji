@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VocabFlow - AI Flashcard Learning</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --dark: #1f2937;
+            --gray: #6b7280;
+            --light-gray: #f3f4f6;
+            --white: #ffffff;
+            --glass: rgba(255, 255, 255, 0.1);
+            --shadow: rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            min-height: 100vh;
+            color: var(--dark);
+            overflow-x: hidden;
+        }
+
+        .app-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--white);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .audio-controls {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .audio-btn {
+            background: var(--glass);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--white);
+            padding: 0.5rem;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .audio-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        /* Navigation */
+        .nav-container {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-tabs {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            padding: 0 1rem;
+        }
+
+        .nav-tab {
+            padding: 1rem 2rem;
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            font-weight: 500;
+        }
+
+        .nav-tab.active {
+            color: var(--white);
+        }
+
+        .nav-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--accent);
+        }
+
+        .nav-tab:hover {
+            color: var(--white);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+            width: 100%;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Card Styles */
+        .glass-card {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px var(--shadow);
+        }
+
+        /* Settings Tab */
+        .settings-grid {
+            display: grid;
+            gap: 2rem;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+
+        .setting-group {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px var(--shadow);
+        }
+
+        .setting-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--dark);
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--gray);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid var(--light-gray);
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        /* Study Tab */
+        .study-container {
+            display: grid;
+            gap: 2rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .topic-section {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 40px var(--shadow);
+        }
+
+        .topic-input-group {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .topic-input {
+            flex: 1;
+        }
+
+        .quick-topics {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            justify-content: center;
+        }
+
+        .topic-chip {
+            padding: 0.5rem 1rem;
+            background: var(--light-gray);
+            border: 2px solid transparent;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .topic-chip:hover {
+            background: var(--primary);
+            color: var(--white);
+            transform: translateY(-2px);
+        }
+
+        /* Flashcard */
+        .flashcard-container {
+            perspective: 1000px;
+            height: 400px;
+            margin: 2rem 0;
+        }
+
+        .flashcard {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+            cursor: pointer;
+        }
+
+        .flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            box-shadow: 0 20px 60px var(--shadow);
+        }
+
+        .card-front {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+        }
+
+        .card-back {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            transform: rotateY(180deg);
+        }
+
+        .word {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--dark);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .pronunciation {
+            font-size: 1.4rem;
+            color: var(--gray);
+            font-style: italic;
+            margin-bottom: 1rem;
+        }
+
+        .meaning {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--dark);
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .example {
+            font-size: 1.1rem;
+            color: var(--gray);
+            font-style: italic;
+            text-align: center;
+            max-width: 80%;
+            line-height: 1.5;
+        }
+
+        /* Controls */
+        .flashcard-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 2rem;
+            background: var(--white);
+            padding: 1.5rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px var(--shadow);
+        }
+
+        .progress-info {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .control-btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--light-gray);
+            color: var(--dark);
+        }
+
+        .control-btn:hover {
+            background: var(--primary);
+            color: var(--white);
+            transform: translateY(-2px);
+        }
+
+        /* Loading Screen */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-content {
+            text-align: center;
+            color: var(--white);
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-top: 4px solid var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        .loading-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Mobile Optimizations */
+        @media (max-width: 768px) {
+            .header-content {
+                padding: 0 1rem;
+            }
+
+            .nav-tabs {
+                justify-content: center;
+            }
+
+            .nav-tab {
+                padding: 1rem;
+                font-size: 0.9rem;
+            }
+
+            .main-content {
+                padding: 1rem;
+            }
+
+            .glass-card {
+                padding: 1.5rem;
+            }
+
+            .settings-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .topic-input-group {
+                flex-direction: column;
+            }
+
+            .flashcard-container {
+                height: 350px;
+            }
+
+            .word {
+                font-size: 2.5rem;
+            }
+
+            .meaning {
+                font-size: 1.5rem;
+            }
+
+            .flashcard-controls {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .control-buttons {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .word {
+                font-size: 2rem;
+            }
+
+            .pronunciation {
+                font-size: 1.1rem;
+            }
+
+            .meaning {
+                font-size: 1.3rem;
+            }
+
+            .example {
+                font-size: 1rem;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        /* Hidden utility */
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    🧠 VocabFlow
+                </div>
+                <div class="audio-controls">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-right: 1rem;">
+                        <span style="color: var(--white); font-size: 0.8rem;">🎵 Lofi Radio</span>
+                        <div id="audioStatus" style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444;"></div>
+                    </div>
+                    <button class="audio-btn" id="audioToggle" title="Toggle Background Music">
+                        🎵
+                    </button>
+                    <button class="audio-btn" id="volumeToggle" title="Mute/Unmute">
+                        🔊
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="nav-container">
+            <div class="nav-tabs">
+                <button class="nav-tab active" data-tab="study">
+                    📚 Study
+                </button>
+                <button class="nav-tab" data-tab="settings">
+                    ⚙️ Settings
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Study Tab -->
+            <div class="tab-content active" id="study-tab">
+                <div class="study-container">
+                    <!-- Topic Creation -->
+                    <div class="topic-section fade-in-up">
+                        <h2 style="text-align: center; margin-bottom: 1.5rem; color: var(--dark);">
+                            Create Your Learning Session
+                        </h2>
+                        
+                        <div class="topic-input-group">
+                            <input type="text" 
+                                   id="topicInput" 
+                                   class="form-input topic-input" 
+                                   placeholder="Enter topic (e.g., Business, Science, Sports...)">
+                            <button class="btn btn-primary" id="generateBtn" onclick="generateVocabulary()">
+                                Generate
+                            </button>
+                        </div>
+
+                        <div class="quick-topics">
+                            <span class="topic-chip" onclick="loadQuickTopic('Business')">Business</span>
+                            <span class="topic-chip" onclick="loadQuickTopic('Technology')">Technology</span>
+                            <span class="topic-chip" onclick="loadQuickTopic('Science')">Science</span>
+                            <span class="topic-chip" onclick="loadQuickTopic('Sports')">Sports</span>
+                            <span class="topic-chip" onclick="loadQuickTopic('Medicine')">Medicine</span>
+                            <span class="topic-chip" onclick="loadQuickTopic('Art')">Art</span>
+                        </div>
+                    </div>
+
+                    <!-- Flashcard Section -->
+                    <div id="flashcardSection" class="hidden">
+                        <div class="flashcard-container">
+                            <div class="flashcard" id="flashcard" onclick="flipCard()">
+                                <div class="card-face card-front">
+                                    <div class="word" id="word"></div>
+                                    <div class="pronunciation" id="pronunciation"></div>
+                                </div>
+                                <div class="card-face card-back">
+                                    <div class="meaning" id="meaning"></div>
+                                    <div class="example" id="example"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flashcard-controls">
+                            <div class="progress-info" id="progress">0 / 0</div>
+                            <div class="control-buttons">
+                                <button class="control-btn" onclick="previousCard()">← Previous</button>
+                                <button class="control-btn" onclick="nextCard()">Next →</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div class="tab-content" id="settings-tab">
+                <div class="settings-grid">
+                    <div class="setting-group fade-in-up">
+                        <h3 class="setting-title">🔑 API Configuration</h3>
+                        <div class="form-group">
+                            <label class="form-label">Gemini API Key</label>
+                            <input type="password" 
+                                   id="apiKey" 
+                                   class="form-input" 
+                                   placeholder="Enter your Gemini API Key">
+                        </div>
+                        <div style="font-size: 0.9rem; color: var(--gray); margin-bottom: 1rem;">
+                            <strong>How to get API Key:</strong><br>
+                            1. Visit <a href="https://makersuite.google.com/app/apikey" target="_blank" style="color: var(--primary);">Google AI Studio</a><br>
+                            2. Sign in and create a new API Key<br>
+                            3. Copy and paste it above
+                        </div>
+                        <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+                    </div>
+
+                    <div class="setting-group fade-in-up">
+                        <h3 class="setting-title">🎵 Audio Settings</h3>
+                        <div class="form-group">
+                            <label class="form-label">Background Music Volume</label>
+                            <input type="range" 
+                                   id="volumeSlider" 
+                                   min="0" 
+                                   max="100" 
+                                   value="30" 
+                                   class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Auto-play Background Music</label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                <input type="checkbox" id="autoPlayMusic" checked>
+                                Enable background music on load
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="setting-group fade-in-up">
+                        <h3 class="setting-title">📊 Learning Preferences</h3>
+                        <div class="form-group">
+                            <label class="form-label">Words per session</label>
+                            <select id="wordsPerSession" class="form-input">
+                                <option value="10">10 words</option>
+                                <option value="20">20 words</option>
+                                <option value="30" selected>30 words</option>
+                                <option value="50">50 words</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Difficulty Level</label>
+                            <select id="difficultyLevel" class="form-input">
+                                <option value="beginner">Beginner</option>
+                                <option value="intermediate" selected>Intermediate</option>
+                                <option value="advanced">Advanced</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Generating vocabulary...</div>
+            <div style="margin-top: 0.5rem; opacity: 0.8;">Please wait while AI creates your learning session</div>
+        </div>
+    </div>
+
+    <!-- Audio Element -->
+    <audio id="backgroundAudio" loop>
+        <source src="https://www.soundjay.com/misc/sounds/bell-ringing-05.wav" type="audio/wav">
+    </audio>
+
+    <script>
+        // Global variables
+        let vocabularyList = [];
+        let currentIndex = 0;
+        let isFlipped = false;
+        let backgroundAudio = null;
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+            setupEventListeners();
+            loadSettings();
+        });
+
+        function initializeApp() {
+            // Setup background audio
+            setupBackgroundAudio();
+            
+            // Load saved API key
+            const savedApiKey = localStorage.getItem('vocabflow_apikey');
+            if (savedApiKey) {
+                document.getElementById('apiKey').value = savedApiKey;
+            }
+        }
+
+        function setupEventListeners() {
+            // Tab navigation
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+            });
+
+            // Keyboard navigation
+            document.addEventListener('keydown', handleKeyPress);
+
+            // Audio controls
+            document.getElementById('audioToggle').addEventListener('click', toggleBackgroundAudio);
+            document.getElementById('volumeToggle').addEventListener('click', toggleMute);
+            document.getElementById('volumeSlider').addEventListener('input', updateVolume);
+        }
+
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        }
+
+        function setupBackgroundAudio() {
+            // Create audio element for lofi streaming
+            backgroundAudio = new Audio();
+            backgroundAudio.crossOrigin = "anonymous";
+            backgroundAudio.loop = true;
+            backgroundAudio.volume = 0.3;
+            
+            // List of lofi radio streams (royalty-free/creative commons)
+            const lofiStreams = [
+                'https://ice1.somafm.com/lush-128-mp3', // SomaFM Lush
+                'https://ice1.somafm.com/groovesalad-128-mp3', // SomaFM Groove Salad
+                'https://ice1.somafm.com/beatblender-128-mp3', // SomaFM Beat Blender
+                'https://ice1.somafm.com/deepspaceone-128-mp3', // Deep Space One
+                'https://ice1.somafm.com/drone-256-mp3' // Drone Zone
+            ];
+            
+            let currentStreamIndex = 0;
+            const statusIndicator = document.getElementById('audioStatus');
+            
+            function updateStatus(status) {
+                if (statusIndicator) {
+                    switch(status) {
+                        case 'loading':
+                            statusIndicator.style.background = '#f59e0b'; // yellow
+                            break;
+                        case 'playing':
+                            statusIndicator.style.background = '#10b981'; // green
+                            break;
+                        case 'error':
+                            statusIndicator.style.background = '#ef4444'; // red
+                            break;
+                        case 'paused':
+                            statusIndicator.style.background = '#6b7280'; // gray
+                            break;
+                    }
+                }
+            }
+            
+            function tryNextStream() {
+                if (currentStreamIndex < lofiStreams.length) {
+                    updateStatus('loading');
+                    backgroundAudio.src = lofiStreams[currentStreamIndex];
+                    backgroundAudio.load();
+                    currentStreamIndex++;
+                } else {
+                    console.log('All streams failed, creating ambient fallback');
+                    updateStatus('error');
+                    createFallbackAudio();
+                }
+            }
+            
+            backgroundAudio.addEventListener('error', (e) => {
+                console.log(`Stream failed: ${lofiStreams[currentStreamIndex - 1]}`);
+                updateStatus('error');
+                setTimeout(tryNextStream, 1000); // Wait 1 second before trying next
+            });
+            
+            backgroundAudio.addEventListener('loadstart', () => {
+                updateStatus('loading');
+            });
+            
+            backgroundAudio.addEventListener('canplay', () => {
+                console.log('Audio stream ready to play');
+                updateStatus('paused');
+            });
+            
+            backgroundAudio.addEventListener('play', () => {
+                updateStatus('playing');
+            });
+            
+            backgroundAudio.addEventListener('pause', () => {
+                updateStatus('paused');
+            });
+            
+            // Auto-start loading the first stream
+            tryNextStream();
+        }
+        
+        function createFallbackAudio() {
+            // Create a simple ambient sound using Web Audio API as fallback
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Create multiple oscillators for richer ambient sound
+                const oscillators = [];
+                const gainNodes = [];
+                
+                // Base frequencies for ambient pad
+                const frequencies = [65.4, 98.0, 130.8, 196.0]; // C2, G2, C3, G3
+                
+                frequencies.forEach((freq, index) => {
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    const filter = audioContext.createBiquadFilter();
+                    
+                    oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
+                    oscillator.type = 'sine';
+                    
+                    // Add slight detuning for warmth
+                    oscillator.detune.setValueAtTime(Math.random() * 10 - 5, audioContext.currentTime);
+                    
+                    // Low-pass filter for warmer sound
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(800, audioContext.currentTime);
+                    
+                    gainNode.gain.setValueAtTime(0.02, audioContext.currentTime);
+                    
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillators.push(oscillator);
+                    gainNodes.push(gainNode);
+                });
+                
+                // Add some gentle modulation
+                const lfo = audioContext.createOscillator();
+                const lfoGain = audioContext.createGain();
+                lfo.frequency.setValueAtTime(0.1, audioContext.currentTime);
+                lfo.type = 'sine';
+                lfoGain.gain.setValueAtTime(5, audioContext.currentTime);
+                
+                lfo.connect(lfoGain);
+                lfoGain.connect(oscillators[0].detune);
+                
+                window.fallbackAudioContext = audioContext;
+                window.fallbackOscillators = oscillators;
+                window.fallbackGainNodes = gainNodes;
+                window.fallbackLFO = lfo;
+                
+                console.log('Ambient fallback audio created');
+            } catch (e) {
+                console.log('Web Audio API not supported:', e);
+            }
+        }
+
+        function toggleBackgroundAudio() {
+            const btn = document.getElementById('audioToggle');
+            
+            if (backgroundAudio && backgroundAudio.paused) {
+                // Try to play the stream
+                backgroundAudio.play().then(() => {
+                    btn.textContent = '⏸️';
+                    btn.title = 'Pause Lofi Radio';
+                }).catch(e => {
+                    console.log('Stream playback failed, trying fallback audio');
+                    // Try fallback Web Audio API
+                    if (window.fallbackAudioContext && window.fallbackOscillators) {
+                        try {
+                            window.fallbackAudioContext.resume().then(() => {
+                                // Start all oscillators and LFO
+                                window.fallbackOscillators.forEach(osc => {
+                                    try {
+                                        osc.start();
+                                    } catch (e) {
+                                        // Oscillator already started
+                                    }
+                                });
+                                
+                                if (window.fallbackLFO) {
+                                    try {
+                                        window.fallbackLFO.start();
+                                    } catch (e) {
+                                        // LFO already started
+                                    }
+                                }
+                                
+                                btn.textContent = '⏸️';
+                                btn.title = 'Pause Ambient Sound';
+                                
+                                // Update status to show fallback is playing
+                                const statusIndicator = document.getElementById('audioStatus');
+                                if (statusIndicator) {
+                                    statusIndicator.style.background = '#06b6d4'; // cyan for fallback
+                                }
+                            });
+                        } catch (fallbackError) {
+                            console.log('Fallback audio also failed:', fallbackError);
+                            btn.textContent = '❌';
+                            btn.title = 'Audio unavailable';
+                        }
+                    }
+                });
+            } else if (backgroundAudio && !backgroundAudio.paused) {
+                backgroundAudio.pause();
+                btn.textContent = '🎵';
+                btn.title = 'Play Lofi Radio';
+            } else if (window.fallbackAudioContext) {
+                // Handle fallback audio
+                if (window.fallbackAudioContext.state === 'suspended') {
+                    window.fallbackAudioContext.resume();
+                    btn.textContent = '⏸️';
+                    btn.title = 'Pause Ambient Sound';
+                } else {
+                    window.fallbackAudioContext.suspend();
+                    btn.textContent = '🎵';
+                    btn.title = 'Play Ambient Sound';
+                }
+            }
+        }
+
+        function toggleMute() {
+            const btn = document.getElementById('volumeToggle');
+            
+            if (backgroundAudio && !backgroundAudio.paused) {
+                backgroundAudio.muted = !backgroundAudio.muted;
+                btn.textContent = backgroundAudio.muted ? '🔇' : '🔊';
+            } else if (window.fallbackGainNodes) {
+                const firstGain = window.fallbackGainNodes[0];
+                const currentGain = firstGain.gain.value;
+                
+                if (currentGain > 0) {
+                    // Mute all gain nodes
+                    window.fallbackGainNodes.forEach(gainNode => {
+                        gainNode.gain.setValueAtTime(0, window.fallbackAudioContext.currentTime);
+                    });
+                    btn.textContent = '🔇';
+                } else {
+                    // Unmute all gain nodes
+                    window.fallbackGainNodes.forEach(gainNode => {
+                        gainNode.gain.setValueAtTime(0.02, window.fallbackAudioContext.currentTime);
+                    });
+                    btn.textContent = '🔊';
+                }
+            }
+        }
+
+        function updateVolume() {
+            const volume = document.getElementById('volumeSlider').value / 100;
+            
+            if (backgroundAudio) {
+                backgroundAudio.volume = volume;
+            }
+            
+            if (window.fallbackGainNodes) {
+                window.fallbackGainNodes.forEach(gainNode => {
+                    gainNode.gain.setValueAtTime(volume * 0.02, window.fallbackAudioContext.currentTime);
+                });
+            }
+        }
+
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.add('active');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.remove('active');
+        }
+
+        async function generateVocabulary() {
+            const topic = document.getElementById('topicInput').value.trim();
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const wordsCount = document.getElementById('wordsPerSession').value;
+            const difficulty = document.getElementById('difficultyLevel').value;
+
+            if (!topic) {
+                alert('Please enter a topic!');
+                return;
+            }
+
+            if (!apiKey) {
+                alert('Please enter your Gemini API Key in Settings!');
+                switchTab('settings');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [{
+                                    text: `Generate exactly ${wordsCount} ${difficulty}-level English vocabulary words related to "${topic}". Return ONLY a valid JSON array without any markdown formatting. Each object should have: word, pronunciation (IPA), meaning (Vietnamese), example (English sentence). Format: [{"word":"example","pronunciation":"/ɪɡˈzæmpəl/","meaning":"ví dụ","example":"This is an example sentence."}]`
+                                }]
+                            }]
+                        })
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(`API Error ${response.status}`);
+                }
+
+                const data = await response.json();
+                let generatedText = data.candidates[0].content.parts[0].text;
+                
+                // Clean and parse JSON
+                generatedText = generatedText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+                const jsonMatch = generatedText.match(/\[[\s\S]*\]/);
+                
+                if (jsonMatch) {
+                    vocabularyList = JSON.parse(jsonMatch[0]);
+                    vocabularyList = vocabularyList.filter(item => 
+                        item.word && item.pronunciation && item.meaning && item.example
+                    );
+                    
+                    if (vocabularyList.length > 0) {
+                        loadVocabulary();
+                    } else {
+                        throw new Error('No valid vocabulary generated');
+                    }
+                } else {
+                    throw new Error('Invalid response format');
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error generating vocabulary. Please check your API key and try again.');
+            }
+
+            hideLoading();
+        }
+
+        function loadQuickTopic(topic) {
+            document.getElementById('topicInput').value = topic;
+            generateVocabulary();
+        }
+
+        function loadVocabulary() {
+            currentIndex = 0;
+            document.getElementById('flashcardSection').classList.remove('hidden');
+            displayCard();
+            
+            // Auto switch to study tab
+            switchTab('study');
+        }
+
+        function displayCard() {
+            if (vocabularyList.length === 0) return;
+
+            const vocab = vocabularyList[currentIndex];
+            document.getElementById('word').textContent = vocab.word;
+            document.getElementById('pronunciation').textContent = vocab.pronunciation;
+            document.getElementById('meaning').textContent = vocab.meaning;
+            document.getElementById('example').textContent = vocab.example;
+            document.getElementById('progress').textContent = `${currentIndex + 1} / ${vocabularyList.length}`;
+
+            // Reset card to front
+            document.getElementById('flashcard').classList.remove('flipped');
+            isFlipped = false;
+        }
+
+        function flipCard() {
+            const card = document.getElementById('flashcard');
+            card.classList.toggle('flipped');
+            isFlipped = !isFlipped;
+        }
+
+        function nextCard() {
+            if (currentIndex < vocabularyList.length - 1) {
+                currentIndex++;
+                displayCard();
+            }
+        }
+
+        function previousCard() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                displayCard();
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (vocabularyList.length === 0) return;
+
+            switch(event.code) {
+                case 'Space':
+                    event.preventDefault();
+                    flipCard();
+                    break;
+                case 'ArrowLeft':
+                    previousCard();
+                    break;
+                case 'ArrowRight':
+                    nextCard();
+                    break;
+            }
+        }
+
+        function saveSettings() {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            if (apiKey) {
+                localStorage.setItem('vocabflow_apikey', apiKey);
+                alert('Settings saved successfully!');
+            }
+        }
+
+        function loadSettings() {
+            const savedApiKey = localStorage.getItem('vocabflow_apikey');
+            if (savedApiKey) {
+                document.getElementById('apiKey').value = savedApiKey;
+            }
+        }
+    </script>
+</body>
+</html>
